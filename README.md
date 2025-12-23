@@ -14,7 +14,7 @@
 
 Wireless debugging with ***only one ESP Chip*** !
 
-Archive by USBIP and CMSIS-DAP protocol stack.
+Achived by USBIP and CMSIS-DAP protocol stack.
 
 > 👉 5m range, 100kb size firmware(Hex) earse and download test:
 
