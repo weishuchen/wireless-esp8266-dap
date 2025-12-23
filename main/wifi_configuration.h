@@ -15,9 +15,8 @@ static struct {
     const char *ssid;
     const char *password;
 } wifi_list[] __attribute__((unused)) = {
-    {.ssid = "CIK1000M_AC", .password = "badminton"}
-//    {.ssid = "OTA", .password = "12345678"},
-//    {.ssid = "DAP", .password = "12345678"}
+    {.ssid = "OTA", .password = "12345678"},
+    {.ssid = "DAP", .password = "12345678"}
    
     // Add your WAP like this:
     // {.ssid = "your ssid", .password = "your password"},
@@ -38,9 +37,9 @@ static struct {
 #define DAP_IP_NETMASK 255, 255, 255, 0
 //
 
-#define USE_OTA              0
+#define USE_OTA              1
 
-#define USE_UART_BRIDGE      0
+#define USE_UART_BRIDGE      1
 #define UART_BRIDGE_PORT     1234
 #define UART_BRIDGE_BAUDRATE 74880
 //
