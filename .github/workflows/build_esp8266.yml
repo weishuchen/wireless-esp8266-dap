@@ -1,36 +1,52 @@
-name: Build ESP8266 Only
+name: Build ESP8266
 
 on:
-  workflow_dispatch: # 仅手动触发，避免每次推送都运行
-
-env:
-  IDF_TOOLS_PATH: ${{ github.workspace }}/.espressif
+  workflow_dispatch: # 仅手动触发
 
 jobs:
-  build-esp8266:
-    runs-on: ubuntu-latest  # 使用更稳定的最新LTS版本
+  build:
+    runs-on: ubuntu-24.04  # 或 ubuntu-latest
+
     steps:
-    - name: 检出代码和子模块
+    - name: 检出代码和子模块 (关键)
       uses: actions/checkout@v4
       with:
-        submodules: recursive
+        submodules: recursive # 必须递归检出，确保 ESP8266_RTOS_SDK 目录存在且完整
 
-    - name: 安装ESP8266工具链和IDF
-      uses: espressif/esp-idf-ci-action@v1
-      with:
-        esp_idf_version: v3.4.7  # ESP8266_RTOS_SDK对应的稳定版本
-        target: esp8266
+    - name: 安装基础编译工具
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y git wget flex bison gperf python3 python3-pip python3-setuptools cmake ninja-build ccache libffi-dev libssl-dev dfu-util
+
+    - name: 下载并设置 ESP8266 工具链
+      run: |
+        # 下载你原始工作流中使用的、已验证可用的工具链
+        wget -q https://dl.espressif.com/dl/xtensa-lx106-elf-linux64-1.22.0-100-ge567ec7-5.2.0.tar.gz
+        tar -xzf xtensa-lx106-elf-linux64-1.22.0-100-ge567ec7-5.2.0.tar.gz
+        # 将工具链路径临时添加到本次工作流的PATH中
+        echo "$(pwd)/xtensa-lx106-elf/bin" >> $GITHUB_PATH
+
+    - name: 安装 Python 依赖
+      run: |
+        # 进入项目自带的 SDK 目录安装依赖
+        cd ESP8266_RTOS_SDK
+        pip3 install --upgrade pip
+        pip3 install -r requirements.txt
+        cd ..
 
     - name: 编译项目
+      env:
+        IDF_PATH: ${{ github.workspace }}/ESP8266_RTOS_SDK  # 手动设置SDK路径
       run: |
-        cd ${{ github.workspace }}
-        idf.py build
+        python3 $IDF_PATH/tools/idf.py fullclean
+        python3 $IDF_PATH/tools/idf.py build
 
     - name: 打包固件
       run: |
-        cd ${{ github.workspace }}/build
+        cd build
+        # 复制主程序文件，然后打包所有必要的bin文件
         cp wireless_esp_dap.bin wireless_esp_dap_app.bin
-        7z a firmware_esp8266.zip *.bin bootloader/*.bin partition_table/*.bin 2>/dev/null || zip -r firmware_esp8266.zip *.bin bootloader/*.bin partition_table/*.bin
+        zip -r firmware_esp8266.zip *.bin bootloader/*.bin partition_table/*.bin
 
     - name: 上传编译产物
       uses: actions/upload-artifact@v4
