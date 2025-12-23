@@ -1,0 +1,39 @@
+name: Build ESP8266 Only
+
+on:
+  workflow_dispatch: # 仅手动触发，避免每次推送都运行
+
+env:
+  IDF_TOOLS_PATH: ${{ github.workspace }}/.espressif
+
+jobs:
+  build-esp8266:
+    runs-on: ubuntu-latest  # 使用更稳定的最新LTS版本
+    steps:
+    - name: 检出代码和子模块
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: 安装ESP8266工具链和IDF
+      uses: espressif/esp-idf-ci-action@v1
+      with:
+        esp_idf_version: v3.4.7  # ESP8266_RTOS_SDK对应的稳定版本
+        target: esp8266
+
+    - name: 编译项目
+      run: |
+        cd ${{ github.workspace }}
+        idf.py build
+
+    - name: 打包固件
+      run: |
+        cd ${{ github.workspace }}/build
+        cp wireless_esp_dap.bin wireless_esp_dap_app.bin
+        7z a firmware_esp8266.zip *.bin bootloader/*.bin partition_table/*.bin 2>/dev/null || zip -r firmware_esp8266.zip *.bin bootloader/*.bin partition_table/*.bin
+
+    - name: 上传编译产物
+      uses: actions/upload-artifact@v4
+      with:
+        name: wireless_esp_dap_esp8266
+        path: ${{ github.workspace }}/build/firmware_esp8266.zip
